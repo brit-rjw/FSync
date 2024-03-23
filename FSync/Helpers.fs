@@ -3,70 +3,102 @@ module FSync.Helpers
 open System
 open System.IO
 
+let printError (message: string) =
+    printfn $"ERROR: {message}"
+
 let getDirPaths (path: string) =
-    Directory.GetDirectories(path, "*.*", SearchOption.AllDirectories)
+    try
+        Ok (Directory.GetDirectories(path, "*.*", SearchOption.AllDirectories))
+    with
+    | :? UnauthorizedAccessException as ex ->
+        Error $"Insufficient permissions when accessing one or more directories for '{path}'.\n'{ex.Message}'"
+    | ex -> Error $"An unknown error occurred when accessing one or more directories for '{path}'.\n{ex.Message}"
 
 let dirExists (path: string) =
-    Directory.Exists(path)
+    try
+        Ok (Directory.Exists(path))
+    with
+    | ex -> Error $"An unknown error occurred when checking the existence of the directory '{path}'.\n{ex.Message}"
     
 let deleteDir (path: string) =
-    Directory.Delete(path, true)
+    try
+        Ok (Directory.Delete(path, true))
+    with
+    | :? UnauthorizedAccessException -> Error $"Insufficient permissions to the delete the directory '{path}'"
+    | ex -> Error $"An unknown error occurred when deleting the directory '{path}'.\n{ex.Message}"
     
 let getFilePaths (path: string) =
-    Directory.GetFiles(path, "*.*", SearchOption.AllDirectories)
+    try
+        Ok (Directory.GetFiles(path, "*.*", SearchOption.AllDirectories))
+    with
+    | :? UnauthorizedAccessException as ex ->
+        Error $"Insufficient permissions when accessing one or more directories for '{path}'.\n'{ex.Message}'"
+    | ex -> Error $"An unknown error occurred when accessing one or more directories for '{path}'.\n{ex.Message}"
     
 let fileExists (path: string) =
-    File.Exists(path)
+    try
+        Ok (File.Exists(path))
+    with
+    | ex -> Error $"An unknown error occurred when checking the existence of the file '{path}'.\n{ex.Message}"
     
 let deleteFile (path: string) =
-    File.Delete(path)
+    try
+        Ok (File.Delete(path))
+    with
+    | :? UnauthorizedAccessException -> Error $"Insufficient permissions to the delete the file '{path}'"
+    | ex -> Error $"An unknown error occurred when deleting the file '{path}'.\n{ex.Message}"
     
 let createDir (path: string) =
-    Directory.CreateDirectory(path) |> ignore
+    try
+        Ok (Directory.CreateDirectory(path) |> ignore)
+    with
+    | :? UnauthorizedAccessException -> Error $"Insufficient permissions to create the directory '{path}'"
+    | ex -> Error $"An unknown error occurred when creating the directory '{path}'.\n{ex.Message}"
     
 let copyFile (sourcePath: string) (targetPath: string) =
-    File.Copy(sourcePath, targetPath)
+    try
+        Ok (File.Copy(sourcePath, targetPath))
+    with
+    | :? UnauthorizedAccessException ->
+        Error $"Insufficient permissions to copy the file from '{sourcePath}' to '{targetPath}'"
+    | ex ->
+        Error $"An unknown error occurred when copying the file from '{sourcePath}' to '{targetPath}'.\n{ex.Message}"
     
 let isFileSizeSame (sourcePath: string) (targetPath: string) =
     FileInfo(sourcePath).Length = FileInfo(targetPath).Length
     
 let replaceFile (sourcePath: string) (targetPath: string) =
-    File.Copy(sourcePath, targetPath, true)
+    try
+        Ok (File.Copy(sourcePath, targetPath, true))
+    with
+    | :? UnauthorizedAccessException ->
+        Error $"Insufficient permissions to replace the file '{targetPath}' with '{sourcePath}'"
+    | ex -> Error $"An unknown error occurred when replacing the file '{targetPath}' with '{sourcePath}'.\n{ex.Message}"
     
 let isFileContentSame (sourcePath: string) (targetPath: string) =
-    let sourceFile = File.OpenRead(sourcePath)
-    let targetFile = File.OpenRead(targetPath)
-    let mutable sourceFileByte = sourceFile.ReadByte()
-    let mutable targetFileByte = targetFile.ReadByte()
-    let mutable fileBytesSame = true
-    while sourceFileByte <> -1 && targetFileByte <> -1 && fileBytesSame do
-        if sourceFileByte = targetFileByte then
-            sourceFileByte <- sourceFile.ReadByte()
-            targetFileByte <- targetFile.ReadByte()
-        else
-            fileBytesSame <- false
-    sourceFile.Close()
-    targetFile.Close()
-    fileBytesSame
+    try
+        use sourceFile = File.OpenRead(sourcePath)
+        use targetFile = File.OpenRead(targetPath)
+        let mutable sourceFileByte = sourceFile.ReadByte()
+        let mutable targetFileByte = targetFile.ReadByte()
+        let mutable fileBytesSame = true
+        while sourceFileByte <> -1 && targetFileByte <> -1 && fileBytesSame do
+            if sourceFileByte = targetFileByte then
+                sourceFileByte <- sourceFile.ReadByte()
+                targetFileByte <- targetFile.ReadByte()
+            else
+                fileBytesSame <- false
+        sourceFile.Close()
+        targetFile.Close()
+        Ok (fileBytesSame)
+    with
+    | :? UnauthorizedAccessException ->
+        Error $"Insufficient permissions to read one or both of the files '{sourcePath}', '{targetPath}'"
+    | ex ->
+        Error $"An unknown error occurred when reading one of both of the files '{sourcePath}', '{targetPath}'.\n{ex.Message}"
     
 let convertTargetPathToSourcePath (path: string) (targetDirPath: string) (sourceDirPath: string) =
     path.Replace(targetDirPath, sourceDirPath)
     
 let convertSourcePathToTargetPath (path: string) (sourceDirPath: string) (targetDirPath: string) =
     path.Replace(sourceDirPath, targetDirPath)
-    
-let printErrorToConsoleAndExit (message: string) =
-    printfn $"ERROR: {message}"
-    Environment.Exit(1)
-
-let checkArgvArrayCount (args: string array) =
-    match args.Length = 2 with
-    | true -> ()
-    | false -> printErrorToConsoleAndExit "Insufficient number of arguments"
-
-let checkArgvDirPaths (args: string array) =
-    args
-    |> Array.iter (fun path ->
-        match dirExists path with
-        | true -> ()
-        | false -> printErrorToConsoleAndExit $"Cannot find the directory '{path}'")
