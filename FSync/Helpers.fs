@@ -59,8 +59,8 @@ let printErrorToConsoleAndExit (message: string) =
     printfn $"ERROR: {message}"
     Environment.Exit(1)
 
-let checkArgvArrayCount (args: Array) =
-    match args.Length < 2 with
+let checkArgvArrayCount (args: string array) =
+    match args.Length = 2 with
     | true -> ()
     | false -> printErrorToConsoleAndExit "Insufficient number of arguments"
 
