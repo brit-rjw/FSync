@@ -12,6 +12,7 @@
         <Compile Include="CreateMissingDirs.fs" />
         <Compile Include="CopyFiles.fs" />
         <Compile Include="Program.fs" />
+        <Content Include="LICENSE" />
     </ItemGroup>
 
 </Project>
