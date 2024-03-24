@@ -88,9 +88,7 @@ let isFileContentSame (sourcePath: string) (targetPath: string) =
                 targetFileByte <- targetFile.ReadByte()
             else
                 fileBytesSame <- false
-        sourceFile.Close()
-        targetFile.Close()
-        Ok (fileBytesSame)
+        Ok fileBytesSame
     with
     | :? UnauthorizedAccessException ->
         Error $"Insufficient permissions to read one or both of the files '{sourcePath}', '{targetPath}'"
