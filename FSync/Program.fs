@@ -4,8 +4,6 @@ open FSync.DeleteExtraFiles
 open FSync.CreateMissingDirs
 open FSync.CopyFiles
 
-
-
 [<EntryPoint>]
 let main argv =
     match argv with
