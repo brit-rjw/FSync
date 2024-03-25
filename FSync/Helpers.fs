@@ -5,6 +5,9 @@ open System.IO
 
 let printError (message: string) =
     printfn $"ERROR: {message}"
+    
+let printWarning (message: string) =
+    printfn $"WARNING: {message}"
 
 let getDirPaths (path: string) =
     try
@@ -24,6 +27,7 @@ let deleteDir (path: string) =
     try
         Ok (Directory.Delete(path, true))
     with
+    | :? DirectoryNotFoundException -> Ok ()
     | :? UnauthorizedAccessException -> Error $"Insufficient permissions to the delete the directory '{path}'"
     | ex -> Error $"An unknown error occurred when deleting the directory '{path}'.\n{ex.Message}"
     
